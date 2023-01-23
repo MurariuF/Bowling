@@ -1,68 +1,81 @@
-﻿namespace Bowling
+﻿using System.Runtime.CompilerServices;
+
+namespace Bowling
 {
     public class Game
     {
-        private int[] rolls = new int[21];
-        private int currentRoll;
+        List<Frame> frames = new List<Frame>();
+        static int NUM_OF_FRAMES = 10;
+        static int STRIKE_MAXIM_ALLOWED_BONUSES = 2;
+        static int SPARE_MAXIM_ALLOWED_BONUSES = 1;
+        static int FRAME_DEFAULT_ROLL_NUMBER = 2;
 
-        public void Roll(int pins)
+        public void Play()
         {
-            rolls[currentRoll++] = pins;
+            var random = new Random();
+            for(int index = 0; index < NUM_OF_FRAMES; index++) 
+            {
+                var maximumRolls = FRAME_DEFAULT_ROLL_NUMBER;
+                var frame = new Frame();
+                var previewsPinsDown = 0;
+                while(frame.GetNumberOfRolls() < maximumRolls)
+                {
+                    var pinsDown = GameUtils.GetRandomRollValue(index, frame.IsStrike, previewsPinsDown, NUM_OF_FRAMES);
+                    previewsPinsDown = pinsDown;
+                    frame.Roll(pinsDown);
+                    AddBonuses(index, frame);
+                    if(frame.IsStrike && index != NUM_OF_FRAMES - 1)
+                    {
+                        break;
+                    }
+                    if(maximumRolls == FRAME_DEFAULT_ROLL_NUMBER && frame.IsStrike && index.Equals(NUM_OF_FRAMES - 1))
+                    {
+                        maximumRolls++;
+                    }
+                }
+                frames.Add(frame);
+            }
         }
 
-        public int Score()
+        public void AddBonuses(int lastIndex, Frame lastFrame)
         {
-            int score = 0;
-            int roll = 0;
-
-            for(int frame = 0; frame < 10; frame++) 
+            for(int i = lastIndex - 2; i < lastIndex; i++)
             {
-                Console.WriteLine($"Round {frame}: ");
-                if(IsStrike(roll))
+                if(i >= 0)
                 {
-                    score += 10 + StrikeBonus(roll);
-                    roll++;
-                }
-                else if(IsSpare(roll))
-                {
-                    score += 10 + SpareBonus(roll);
-                    roll += 2;
-                }
-                else
-                {
-                    score += SumOfBallsInFrame(roll);
-                    roll += 2;
-                    //rolls[21] = 0;
+                    if (frames[i].IsStrike && frames[i].BonusesNumber < STRIKE_MAXIM_ALLOWED_BONUSES)
+                    {
+                        frames[i].AddBonus(lastFrame.GetLastRoll());
+                    }
+                    else if (frames[i].IsSpare && frames[i].BonusesNumber < SPARE_MAXIM_ALLOWED_BONUSES)
+                    {
+                        frames[i].AddBonus(lastFrame.GetLastRoll());
+                    }
                 }
             }
-
-            return score;
         }
 
-        private bool IsStrike(int roll)
+        public void ShowInfo()
         {
-            return rolls[roll] == 10;
+            Console.WriteLine("Runda    Strike     Spare    Score    Lovituri    Prima     A doua");
+        }
+        public void ShowScore()
+        {
+            this.ShowInfo();
+            for(int index = 0; index < frames.Count; index++)
+            {
+                Console.WriteLine($"{index + 1} - {frames[index].IsStrike} - {frames[index].IsSpare} - {frames[index].TotalScore} - " +
+                    $"{frames[index].GetNumberOfRolls()} - {frames[index].GetAllRolls()}");
+            }
         }
 
-        private bool IsSpare(int roll)
-        {
-            return rolls[roll] + rolls[roll + 1] == 10; 
-        }
 
-        private int SumOfBallsInFrame(int roll)
-        {
-            return rolls[roll] + rolls[roll + 1];
-        }
 
-        private int SpareBonus(int roll)
-        {
-            return rolls[roll + 2];
-        }
+        //interfata in doua parti(daca sunt prea multe if-uri)
+        //runda obisnuita si ultima runda
+        //list cu iframe in joc si interfata cu doua metode prima care face handleFrame(int nr) si a doua care este isFrameOver()
 
-        private int StrikeBonus(int roll)
-        {
-            return rolls[roll + 1] + rolls[roll + 2];
-        }
+
 
 
     }
